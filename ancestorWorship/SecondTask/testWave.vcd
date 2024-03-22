@@ -1,0 +1,32 @@
+$date
+	Fri Mar 22 10:55:31 2024
+$end
+$version
+	Icarus Verilog
+$end
+$timescale
+	1ps
+$end
+$scope module tb_Wave $end
+$var parameter 32 ! PERIOD $end
+$var reg 1 " a $end
+$var reg 1 # b $end
+$var reg 1 $ c $end
+$scope module u_Wave $end
+$var wire 1 " a $end
+$var wire 1 # b $end
+$var wire 1 $ c $end
+$upscope $end
+$upscope $end
+$enddefinitions $end
+$comment Show the parameter values. $end
+$dumpall
+b1010 !
+$end
+#0
+$dumpvars
+0$
+0#
+0"
+$end
+#300000

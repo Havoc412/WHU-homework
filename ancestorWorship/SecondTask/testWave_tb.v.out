@@ -1,0 +1,47 @@
+#! /c/Source/iverilog-install/bin/vvp
+:ivl_version "12.0 (devel)" "(s20150603-1539-g2693dd32b)";
+:ivl_delay_selection "TYPICAL";
+:vpi_time_precision - 12;
+:vpi_module "C:\iverilog\lib\ivl\system.vpi";
+:vpi_module "C:\iverilog\lib\ivl\vhdl_sys.vpi";
+:vpi_module "C:\iverilog\lib\ivl\vhdl_textio.vpi";
+:vpi_module "C:\iverilog\lib\ivl\v2005_math.vpi";
+:vpi_module "C:\iverilog\lib\ivl\va_math.vpi";
+S_0000019c4438d730 .scope module, "tb_Wave" "tb_Wave" 2 5;
+ .timescale -9 -12;
+P_0000019c44389ef0 .param/l "PERIOD" 0 2 8, +C4<00000000000000000000000000001010>;
+v0000019c4441b1a0_0 .var "a", 0 0;
+v0000019c4441b240_0 .var "b", 0 0;
+v0000019c4441b2e0_0 .var "c", 0 0;
+S_0000019c4438d8c0 .scope module, "u_Wave" "Wave" 2 18, 3 1 0, S_0000019c4438d730;
+ .timescale -9 -12;
+    .port_info 0 /INPUT 1 "a";
+    .port_info 1 /INPUT 1 "b";
+    .port_info 2 /INPUT 1 "c";
+v0000019c443a2dd0_0 .net "a", 0 0, v0000019c4441b1a0_0;  1 drivers
+v0000019c443a2950_0 .net "b", 0 0, v0000019c4441b240_0;  1 drivers
+v0000019c4441b100_0 .net "c", 0 0, v0000019c4441b2e0_0;  1 drivers
+    .scope S_0000019c4438d730;
+T_0 ;
+    %pushi/vec4 0, 0, 1;
+    %store/vec4 v0000019c4441b1a0_0, 0, 1;
+    %pushi/vec4 0, 0, 1;
+    %store/vec4 v0000019c4441b240_0, 0, 1;
+    %pushi/vec4 0, 0, 1;
+    %store/vec4 v0000019c4441b2e0_0, 0, 1;
+    %end;
+    .thread T_0;
+    .scope S_0000019c4438d730;
+T_1 ;
+    %vpi_call 2 26 "$dumpfile", "testWave.vcd" {0 0 0};
+    %vpi_call 2 27 "$dumpvars" {0 0 0};
+    %delay 300000, 0;
+    %vpi_call 2 28 "$finish" {0 0 0};
+    %end;
+    .thread T_1;
+# The file index is used to find the file name in the following table.
+:file_names 4;
+    "N/A";
+    "<interactive>";
+    "testWave_tb.v";
+    "./testWave.v";
