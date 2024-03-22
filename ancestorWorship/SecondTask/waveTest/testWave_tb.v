@@ -1,6 +1,7 @@
 //~ `New testbench
 `timescale  1ns / 1ps
-`include "testWave.v"
+`include "./waveTest/testWave.v"
+// mark 默认有一个根目录
 
 module tb_Wave;
 
