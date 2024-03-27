@@ -17,7 +17,7 @@ always @ (posedge clk or negedge rstn)
     end
 assign Clk_CPU = (sw_i[15]) ? clk_div[28] : clk_div[25];
 
-// ROM 实例化
+// tag ROM 实例化
 wire [31:0] instr;
 parameter IM_CODE_NUM = 12;
 reg [3:0] rom_addr;
@@ -60,7 +60,7 @@ wire [4: 0] ALUOp;
 wire [5: 0] EXTOp;  // 暂时还不是特别理解 -> 不同的立即数扩展方式
 wire [2: 0] DMType;
 
-// RF 实例化
+// tag RF 实例化
 wire [31: 0] RD1, RD2;
 reg [31: 0] WD;   // 用于 Wire - RF
 wire [31: 0] B;
@@ -94,7 +94,7 @@ always @ (posedge Clk_CPU or negedge rstn) begin
         reg_addr = reg_addr;
 end
 
-// ALU 实例化
+// tag ALU 实例化
 wire Zero; 
 wire [31: 0] alu_out;
 
@@ -126,7 +126,7 @@ always @ (posedge Clk_CPU or negedge rstn) begin
     end
 end
 
-// imm 实例化
+// tag imm 实例化
 wire [31: 0] immout;
 // 目前只对应部分的指令
 EXT U_EXT(
@@ -140,7 +140,7 @@ EXT U_EXT(
     .immout(immout)
 );
 
-// DM 模块
+// tag DM 模块
 reg [2: 0] DMTy;
 wire [31: 0] din, dout;
 // dout 的作用？
@@ -169,7 +169,7 @@ always @ (*) begin
     endcase
 end
 
-// Ctrl 实例化
+// tag Ctrl 实例化
 Ctrl U_Ctrl (
     .Op(Op), .Funct7(Funct7), .Funct3(Funct3), .Zero(Zero), 
 
@@ -178,7 +178,7 @@ Ctrl U_Ctrl (
     .ALUSrc(ALUSrc), .WDSrc(WDSrc), .DMType(DMType)
 );
 
-// SHOW - DM 数据展示
+// tag SHOW - DM 数据展示
 reg [3: 0] dm_addr;
 reg [31: 0] dm_data;
 parameter DM_DATA_SHOW = 8;

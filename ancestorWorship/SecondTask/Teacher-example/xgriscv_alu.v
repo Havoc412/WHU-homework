@@ -10,6 +10,7 @@
 // ====================================================================
 
 `include "xgriscv_defines.v"
+
 module alu(
 	input	[`XLEN-1:0]	a, b, 
 	input	[4:0]  		shamt, 

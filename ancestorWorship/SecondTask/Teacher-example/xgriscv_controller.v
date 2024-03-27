@@ -19,6 +19,7 @@ module controller(
   input [`RFIDX_WIDTH-1:0]  rd, rs1,
   input [11:0]              imm,
   input                     zero, lt, // from cmp in the decode stage
+                                      // question lt?
 
   output [4:0]              immctrl,            // for the ID stage
   output                    itype, jal, jalr, bunsigned, pcsrc,
