@@ -1,36 +1,30 @@
-module RF(
-        input clk,
-        input rst,
-        input RFWr,
-        input [4:0] A1, A2, A3,
-        input [31:0] WD,
+`include "Define.v"
 
-        output [31:0] RD1, RD2
+module RF(
+    input clk, rst,
+    input regWrite,
+    input [`RFIDX_WIDTH-1: 0] A1, A2, A3, // mark A1,A2 -> read ; A3 -> load
+    input [`XLEN-1: 0] wd,
+
+    output [`XLEN-1: 0] dt1, dt2,   // info data
+
+    input [`INSTR_NUM-1: 0] pc // test
     );
 
-    reg [31:0] rf [31:0];
+    reg [`XLEN-1: 0] rf [`RFREG_NUM-1: 0];
+
     integer i;
     always @ (negedge clk or negedge rst) begin
-    if(!rst) begin
-        for(i=0; i<32; i = i+1)
-            rf[i] = 32'b0;
-    end
-    else
-    // 写信号 && 排除0号寄存器
-    if(RFWr && A3 != 0) begin
-        rf[A3] <= WD;
-    end
+        // test reset
+        if(!rst)
+            for(i=0; i<32; i = i+1)
+                rf[i] = 32'b0;
+        else if(regWrite && A3 != 0) begin  // 写信号 && 排除 x0;
+            rf[A3] <= wd;
+            $display("pc = %h: x%d = %h", pc, A3, wd);  // test
+        end
     end
 
-    // // Reset
-    // always @ (negedge rst) begin
-    //     if(!rst) begin
-    //         for(i=0; i<32; i = i+1)
-    //             rf[i] = 32'b0;
-    //     end
-    // end
-
-    assign RD1 = (A1 != 0) ? rf[A1] : 0;
-    assign RD2 = (A2 != 0) ? rf[A2] : 0;
-
+    assign dt1 = (A1 != 0) ? rf[A1] : 0;
+    assign dt2 = (A2 != 0) ? rf[A2] : 0;
 endmodule

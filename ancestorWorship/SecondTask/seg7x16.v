@@ -54,9 +54,9 @@ module seg7x16(
         if(disp_mode == 1'b0)
             begin
                 case(seg7_addr)
-                    0: seg_data_r = i_data_store[3:0];
-                    1: seg_data_r = i_data_store[7:4];
-                    2: seg_data_r = i_data_store[11:8];
+                    0: seg_data_r = i_data_store[3:  0];
+                    1: seg_data_r = i_data_store[7:  4];
+                    2: seg_data_r = i_data_store[11: 8];
                     3: seg_data_r = i_data_store[15:12];
                     4: seg_data_r = i_data_store[19:16];
                     5: seg_data_r = i_data_store[23:20];
@@ -67,8 +67,8 @@ module seg7x16(
         else
             begin
                 case(seg7_addr)
-                    0: seg_data_r = i_data_store[7:0];
-                    1: seg_data_r = i_data_store[15:8];
+                    0: seg_data_r = i_data_store[7:  0];
+                    1: seg_data_r = i_data_store[15: 8];
                     2: seg_data_r = i_data_store[23:16];
                     3: seg_data_r = i_data_store[31:24];
                     4: seg_data_r = i_data_store[39:32];
