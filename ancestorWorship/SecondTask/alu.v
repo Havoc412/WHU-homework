@@ -18,7 +18,7 @@ module ALU(
     // info differentiate SUB and AND by aluCtrl[3]
     wire [`XLEN-1: 0] bb = aluCtrl[3] ? ~b : b;
     
-    // 拓宽，以防溢出 // question +aluCtrl[3] ?
+    // 拓宽，以防溢出 // question 【+aluCtrl[3]】 ?
     wire [`XLEN-1: 0] sum = (unSigned & ({1'b0, a} + {1'b0, bb} + aluCtrl[3])) | (~unSigned & ({a[`XLEN-1], a} + {bb[`XLEN-1], bb} + aluCtrl[3]));
 
     always @(*) begin

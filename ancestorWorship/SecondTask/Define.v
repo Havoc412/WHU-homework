@@ -7,12 +7,12 @@
 `define RFIDX_WIDTH 5
 
 `define ADDR_WIDTH  10
-`define IMEM_NUM  1024  // question ?
+`define IMEM_NUM  1024  // info dat 读取的 0x 指令。
 `define IMEM_WIDTH 32
 `define DMEM_NUM  1024
 `define DMEM_WIDTH 10
 
-`define INSTR_NUM  12   // info 在这里修改总指令数量。
+`define INSTR_NUM  1  // info 在这里修改总指令数量。
 `define INSTR_WIDTH 4
 
 // 1. base Type -> OpCode

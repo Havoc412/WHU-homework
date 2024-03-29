@@ -5,6 +5,7 @@
 `include "Mem.v"
 `include "RF.v"
 `include "seg7x16.v"
+`include "LittleFunct.v"
 
 `define SW_NUM 16
 `define CLK_WIDTH 32
@@ -65,7 +66,9 @@ module main(
     wire [6: 0] extCtrl;
     wire [1: 0] lwhb, swhb;
 
-    // wire [1: 0] WDSrc;  // question 
+    wire [1: 0] rfSrc_wd;
+    wire aluSrc_b;
+
     wire zero;
 
     // tag Ctrl 实例化
@@ -76,13 +79,14 @@ module main(
         .extCtrl(extCtrl), .aluCtrl(aluCtrl),
 
         .lwhb(lwhb), .swhb(swhb),
+        .aluSrc_b(aluSrc_b), .rfSrc_wd(rfSrc_wd),
         // .ALUSrc(ALUSrc), .WDSrc(WDSrc), .DMType(DMType),
 
         .zero(zero)
     );
 
     // tag imm 实例化
-    wire [`XLEN-1: 0] immout;
+    wire [`XLEN-1: 0] imm_out;
     // 目前只对应部分的指令 -> 目前对应大部分常用指令
     EXT U_EXT(
         .clk(CLK_CPU), 
@@ -96,12 +100,12 @@ module main(
 
         .extCtrl(extCtrl),
 
-        .immout(immout)
+        .immout(imm_out)
     );
 
     // tag RF 实例化
     wire [`XLEN-1: 0] dt1, dt2;
-    wire [`XLEN-1: 0] b;
+    wire [`XLEN-1: 0] b; // info ALU 选中的 dt2，
     reg [`XLEN-1: 0] wd;   // 用于 Wire - RF
     RF U_RF(
         .clk(CLK_CPU),  .rst(rstn),
@@ -114,8 +118,11 @@ module main(
         .dt1(dt1), .dt2(dt2)
     );
 
+    // RF - MUX    // info coe 架构上，只需要 romAddr + 1。
+    mux3 #(`XLEN) rfMux (.d0(alu_out), .d1(dm_out), .d2(romAddr+1), .src(rfSrc_wd), .out(wd));
+
     // test SHOW - 每次拿出来一位 RF
-    parameter RF_NUM = 8;   // test RF - show
+    parameter RF_NUM = 4;   // test RF - show
     reg [`XLEN-1: 0] reg_data; // dt1, dt2;
     reg [`RFIDX_WIDTH-1: 0] reg_addr;
     always @ (posedge CLK_CPU or negedge rstn) begin
@@ -133,12 +140,15 @@ module main(
     // tag ALU 实例化
     wire [`XLEN-1: 0] alu_out;
     ALU U_ALU (
-        .a(dt1), .b(zero), 
+        .a(dt1), .b(b), 
         .aluCtrl(aluCtrl),
         .aluout(alu_out),
 
         .zero(zero)
     );
+
+        // ALU - MUX
+    mux2 #(`XLEN) aluMux (.d0(dt2), .d1(imm_out), .src(aluSrc_b), .out(b));
 
     // test SHOW - 也只是展示用，实际计算无用
     reg [`XLEN-1: 0] alu_data;
@@ -153,10 +163,10 @@ module main(
                 alu_addr = 3'b0;
             // normal
             case(alu_addr)
-                3'b000: alu_data = dt1;
-                3'b001: alu_data = b;
-                3'b010: alu_data = alu_out;
-                3'b011: alu_data = zero;
+                3'b000: alu_data = {4'h1, dt1[27: 0]};
+                3'b001: alu_data = {4'h2, b[27: 0]};
+                3'b010: alu_data = {4'h3, alu_out[27: 0]};
+                3'b011: alu_data = {4'h4, {(`XLEN-1-4){1'b0}}, zero};
                 default: 
                     alu_data = 32'hFFFFFFFF;
             endcase
@@ -166,28 +176,16 @@ module main(
 
     // tag DM 模块
     // reg [2: 0] DMTy;
-    wire [`XLEN-1: 0] din, dout;    // info 注意 多选器的配合。
+    wire [`XLEN-1: 0] dm_in, dm_out;    // info 注意 多选器的配合。
     DM U_DM (
         .clk(CLK_CPU),  .rst(rstn),
 
         .memWrite(memWrite),            // test .sw_1(sw_i[1]),
-        .addr(alu_out[`DMEM_WIDTH-1: 0]), .wd(din),
+        .addr(alu_out), .wd(dm_in),
         .lwhb(lwhb), .swhb(swhb),
         
-        .dt(dout)
+        .dt(dm_out)
     );
-
-    // tag MUX 多选器。
-        // alu - mux // info 只有rs2需要多选
-    assign b = (ALUSrc) ? immout : dt2; // question
-        // RF - mux
-    always @ (*) begin
-        case(WDSrc)
-            `WD_CTRL_ALU: WD <= alu_out;
-            `WD_CTRL_MEM: WD <= dout;
-            // `WD_CTRL_PC:  WD <= PC_out + 4; // info 但是如果直接操作地址的话，那么 +1 就足够了。
-        endcase
-    end
 
     // test SHOW - DM 数据展示
     reg [3: 0] dm_addr;
@@ -199,17 +197,17 @@ module main(
         else if(sw_i[11]) begin
             if(dm_addr == DM_DATA_SHOW)
                 dm_addr = 5'b0;
-            dm_data = {dm_addr, 4'b000, U_DM.dmem[dm_addr]};
+            dm_data = {dm_addr, U_DM.dmem[dm_addr][27: 0]};
             dm_addr = dm_addr + 1'b1;
         end
     end
 
-    // tag TEST - SHOW
+    // tag TEST - SHOW // todo wait update
     wire clk_test;
     assign clk_test = clk_div[25];
-    reg [31: 0] test_data;
+    reg [`XLEN-1: 0] test_data;
     reg [4: 0] test_addr;
-    parameter TEST_NUM = 9;
+    parameter TEST_NUM = 4;
     always@(posedge clk_test or negedge rstn) begin
         if(!rstn)
             test_addr = 3'b0;
@@ -219,14 +217,14 @@ module main(
                 test_addr = 5'b0;
             // normal
             case(test_addr)
-                5'b00000: test_data = {(romAddr + 1'b1), 4'b0000, 19'b0001000000000000000, regWrite};
-                5'b00001: test_data = {(romAddr + 1'b1), 4'b0000, 16'b0010000000000000, rs1[3: 0]};
-                5'b00010: test_data = {(romAddr + 1'b1), 4'b0000, 16'b0011000000000000, rd[3: 0]};
-                5'b00011: test_data = {(romAddr + 1'b1), 4'b0000, 14'b01000000000000, 2'b00, WDSrc};
-                5'b00100: test_data = {(romAddr + 1'b1), 4'b0000, 4'b0101, immout[19: 0]};
-                5'b00101: test_data = {{romAddr + 1'b1}, 4'b0110, 3'b000, aluCtrl};
-                5'b00110: test_data = {{romAddr + 1'b1}, 4'b0111, 2'b00, extCtrl};
-                5'b00111: test_data = {{romAddr + 1'b1}, 4'b0000, 4'b1000, dout[19: 0]};
+                5'b00000: test_data = {(romAddr + 1'b1), {(`XLEN-4-1){1'b0}}, regWrite};
+                5'b00001: test_data = {(romAddr + 1'b1), {(`XLEN-4-4){1'b0}}, rs1[3: 0]};
+                5'b00010: test_data = {(romAddr + 1'b1), {(`XLEN-4-4){1'b0}}, rd[3: 0]};
+                5'b00011: test_data = {(romAddr + 1'b1), {(`XLEN-4-2){1'b0}}, rfSrc_wd};
+                5'b00100: test_data = {(romAddr + 1'b1), imm_out[27: 0]};
+                5'b00101: test_data = {{romAddr + 1'b1}, {(`XLEN-4-4){1'b0}}, aluCtrl};
+                5'b00110: test_data = {{romAddr + 1'b1}, alu_out[27: 0]};
+                5'b00111: test_data = {{romAddr + 1'b1}, 4'b0000, 4'b1000, dm_out[19: 0]};
                 default: 
                     test_data = 32'hFFFFFFFF;
             endcase
@@ -235,19 +233,19 @@ module main(
     end
 
     // tag switch - ctrl
-    always@(sw_i)
-        if(sw_i[0] == 0) begin
-            case(sw_i[14:11])
-                4'b1000: display_data = test_data;
-                4'b0100: display_data = reg_data;
-                4'b0010: display_data = alu_data;
-                4'b0001: display_data = dm_data;
-                default:
-                    display_data = instr;
-            endcase
-        end else begin
-            display_data = led_disp_data;
-        end
+
+    reg [`XLEN-1: 0] display_data;
+
+    always@(sw_i) begin
+      case(sw_i[14:11])
+        // 4'b1000: display_data = test_data;
+        4'b0100: display_data <= reg_data;
+        4'b0010: display_data <= alu_data;
+        4'b0001: display_data <= dm_data;
+        default:
+            display_data <= instr;
+    endcase
+    end
 
     // tag seg7x16 - display 显示LED使用
     seg7x16 u_seg7x16(

@@ -15,13 +15,13 @@ module RF(
 
     integer i;
     always @ (negedge clk or negedge rst) begin
+        $display("RF: pc = %h: x%d = %h", pc, A3, wd);  // test
         // test reset
         if(!rst)
             for(i=0; i<32; i = i+1)
                 rf[i] = 32'b0;
         else if(regWrite && A3 != 0) begin  // 写信号 && 排除 x0;
             rf[A3] <= wd;
-            $display("pc = %h: x%d = %h", pc, A3, wd);  // test
         end
     end
 

@@ -1,7 +1,7 @@
 `include "Define.v"
 
 // info 单周期应该用不到这个。
-// question 好像是存储 指令 用的模块。
+// question 好像是存储 指令 用的模块。 -> 确实。
 module IM(
     input [`ADDR_WIDTH-1: 0] addr,
     

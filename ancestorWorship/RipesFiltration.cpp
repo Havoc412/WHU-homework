@@ -9,31 +9,37 @@ int main()
 	string instruct;
 	vector<string> vec;
 	
-	while(getline(cin, instruct)) {
-		if(instruct == "EOF")
-			break;
-			
-		bool flag = false;
-		int pos = 0;
-		for(int i=0; i<instruct.size(); i++) {
-			if(instruct[i] == ':') {
-				flag = true;
-				continue;
-			}
-			if(flag && instruct[i] != ' ') {
-				pos = i;
+	while(true) {
+		while(getline(cin, instruct)) {
+			if(instruct == "EOF")
 				break;
+
+			bool flag = false;
+			int pos = 0;
+			for(int i=0; i<instruct.size(); i++) {
+				if(instruct[i] == ':') {
+					flag = true;
+					continue;
+				}
+				if(flag && instruct[i] != ' ') {
+					pos = i;
+					break;
+				}
 			}
+			string temp = instruct.substr(pos, INSTRUCT_LEN);
+			vec.emplace_back(temp);
 		}
-		string temp = instruct.substr(pos, INSTRUCT_LEN);
-		vec.emplace_back(temp);
-	}
-	
-	for(int i=0; i<vec.size(); i++) {
-		if(i % 4 == 0)
-			cout<<endl<<vec[i];
-		else
-			cout<<" "<<vec[i];
+
+		for(int i=0; i<vec.size(); i++) {
+			if(i % 4 == 0)
+				cout<<endl<<vec[i];
+			else
+				cout<<" "<<vec[i];
+		}
+		
+		// INIT
+		vec.clear();
+		cout<<endl<<"-------\nÏÂÒ»ÂÖ...\n";
 	}
 //	cout<<";";
 	return 0;

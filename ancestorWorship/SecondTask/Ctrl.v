@@ -10,11 +10,14 @@ module Ctrl(
     
     output regWrite, memWrite, memToReg, // question memToReg?
     output [1: 0] lwhb, swhb, // type of read && store
-    output iType, Jal, Jalr, b_unsigned, l_unsigned, pcSrc, aluSrc,
+    output iType, Jal, Jalr, b_unsigned, l_unsigned,
                 // info 为了区分，我使用了大写的 J。
     output [5: 0] extCtrl,
     output reg [3: 0] aluCtrl, // reg -> 用 always 赋值, // question 不确定有无 BUG,
-    output [1: 0] aluSrc_a,
+
+    output  pcSrc,
+    output [1: 0] rfSrc_wd,
+    // output [1: 0] aluSrc_a, // question
     output aluSrc_b 
     );
 
@@ -77,13 +80,13 @@ module Ctrl(
 
         // tag Opcode
     wire shamt = slli | srli | srai;
-    wire itype = addri | load;  // info laod 和 immALU 相同。
+    wire itype = addri | load;     // info laod 和 immALU 相同。
     assign iType = addri | jalr;   // info 添加 jalr ！
 
     wire stype = store;
     wire btype = branch;
     wire utype = lui | auipc;
-    // wire jtype = jal | jalr;  // 两者不同，无用。
+    wire jtype = jal | jalr;  // 两者不同，无用。 -> rfSrc 有用
 
     // 4. 
     assign extCtrl = {shamt, itype, stype, btype, utype, jal};
@@ -99,9 +102,10 @@ module Ctrl(
     assign memToReg = 0;
 
         // tag src
-    assign pcSrc = 0;
-    assign aluSrc_a = lui ? 2'b01 : (auipc ? 2'b10 : 2'b00); // 6, miao
-    assign aluSrc_b = lui || auipc || addi;
+    assign pcSrc = 0; // todo ...
+    // assign aluSrc_a = lui ? 2'b01 : (auipc ? 2'b10 : 2'b00); // 6, miao // todo
+    assign rfSrc_wd = { utype | jtype, load}; // bug wait test
+    assign aluSrc_b = lui | auipc | addi;
     
     assign lwhb = lb ? `SL_B : (lh ? `SL_H : `SL_W);
     assign swhb = sb ? `SL_B : (sh ? `SL_H : `SL_W);

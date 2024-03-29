@@ -3,7 +3,7 @@ set_property -dict { PACKAGE_PIN E3    IOSTANDARD LVCMOS33 } [get_ports { clk }]
 create_clock -add -name sys_clk_pin -period 100.00 -waveform {0 50} [get_ports {clk}];
 set_property -dict { PACKAGE_PIN C12   IOSTANDARD LVCMOS33 } [get_ports { rstn }]; #IO_L3P_T0_DQS_AD1P_15 Sch=cpu_resetn
 set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets sw_i_IBUF[15]]; # add for temp
-set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets BTNC_IBUF] 
+set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets BTNC_IBUF];
 
 # 7seg
 set_property -dict { PACKAGE_PIN T10   IOSTANDARD LVCMOS33 } [get_ports { disp_seg_o[0] }]; #IO_L24N_T3_A00_D16_14 Sch=ca
