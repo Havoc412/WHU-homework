@@ -106,7 +106,7 @@ module main(
     // tag RF 实例化
     wire [`XLEN-1: 0] dt1, dt2;
     wire [`XLEN-1: 0] b; // info ALU 选中的 dt2，
-    reg [`XLEN-1: 0] wd;   // 用于 Wire - RF
+    wire [`XLEN-1: 0] wd;   // 用于 Wire - RF   // update 因为用 mux3-output, 那么无法用 reg 存储。
     RF U_RF(
         .clk(CLK_CPU),  .rst(rstn),
         .regWrite(regWrite),
@@ -122,17 +122,18 @@ module main(
     mux3 #(`XLEN) rfMux (.d0(alu_out), .d1(dm_out), .d2(romAddr+1), .src(rfSrc_wd), .out(wd));
 
     // test SHOW - 每次拿出来一位 RF
-    parameter RF_NUM = 4;   // test RF - show
+    parameter RF_ST = 5;
+    parameter RF_END = 8;   // info 展示 x5 ~ x8
     reg [`XLEN-1: 0] reg_data; // dt1, dt2;
     reg [`RFIDX_WIDTH-1: 0] reg_addr;
     always @ (posedge CLK_CPU or negedge rstn) begin
         if(!rstn)
-            reg_addr = 5'b0;
+            reg_addr = RF_ST;
         else if(sw_i[13] == 1'b1) begin // 这里只做显示用，之于指令的执行意义不大。
-            if(reg_addr == RF_NUM)
-                reg_addr = 5'b0;
             reg_data = {reg_addr, U_RF.rf[reg_addr][27: 0]};   // 不知道是不是折合位数的时候出现问题
-            reg_addr = reg_addr + 1'b1;
+            reg_addr = reg_addr + 1;
+            if(reg_addr == RF_END)
+                reg_addr = RF_ST;
         end else
             reg_addr = reg_addr;
     end
@@ -163,10 +164,10 @@ module main(
                 alu_addr = 3'b0;
             // normal
             case(alu_addr)
-                3'b000: alu_data = {4'h1, dt1[27: 0]};
-                3'b001: alu_data = {4'h2, b[27: 0]};
-                3'b010: alu_data = {4'h3, alu_out[27: 0]};
-                3'b011: alu_data = {4'h4, {(`XLEN-1-4){1'b0}}, zero};
+                3'b000: alu_data = {4'b0001, dt1[27: 0]};
+                3'b001: alu_data = {4'b0010, b[27: 0]};
+                3'b010: alu_data = {4'b0011, alu_out[27: 0]};
+                3'b011: alu_data = {4'b0100, {(`XLEN-4-1){1'b0}}, zero};
                 default: 
                     alu_data = 32'hFFFFFFFF;
             endcase
@@ -197,7 +198,7 @@ module main(
         else if(sw_i[11]) begin
             if(dm_addr == DM_DATA_SHOW)
                 dm_addr = 5'b0;
-            dm_data = {dm_addr, U_DM.dmem[dm_addr][27: 0]};
+            dm_data = {dm_addr, {(`XLEN-4-8){1'b0}}, U_DM.dmem[dm_addr]};
             dm_addr = dm_addr + 1'b1;
         end
     end
@@ -206,29 +207,36 @@ module main(
     wire clk_test;
     assign clk_test = clk_div[25];
     reg [`XLEN-1: 0] test_data;
-    reg [4: 0] test_addr;
-    parameter TEST_NUM = 4;
+
+    `define TEST_NUM 8
+    reg [2: 0] test_addr;
+    parameter TEST_NUM = 7;
     always@(posedge clk_test or negedge rstn) begin
         if(!rstn)
             test_addr = 3'b0;
-        else if(sw_i[14]) begin
+        else if(sw_i[14]) begin                
             // re
             if(test_addr == TEST_NUM)
                 test_addr = 5'b0;
             // normal
             case(test_addr)
-                5'b00000: test_data = {(romAddr + 1'b1), {(`XLEN-4-1){1'b0}}, regWrite};
-                5'b00001: test_data = {(romAddr + 1'b1), {(`XLEN-4-4){1'b0}}, rs1[3: 0]};
-                5'b00010: test_data = {(romAddr + 1'b1), {(`XLEN-4-4){1'b0}}, rd[3: 0]};
-                5'b00011: test_data = {(romAddr + 1'b1), {(`XLEN-4-2){1'b0}}, rfSrc_wd};
-                5'b00100: test_data = {(romAddr + 1'b1), imm_out[27: 0]};
-                5'b00101: test_data = {{romAddr + 1'b1}, {(`XLEN-4-4){1'b0}}, aluCtrl};
-                5'b00110: test_data = {{romAddr + 1'b1}, alu_out[27: 0]};
-                5'b00111: test_data = {{romAddr + 1'b1}, 4'b0000, 4'b1000, dm_out[19: 0]};
+                `TEST_NUM'b00000: test_data = {(romAddr + 1'b1), 4'h1, {(`XLEN-8-1){1'b0}}, regWrite};
+                `TEST_NUM'b00001: test_data = {(romAddr + 1'b1), 4'h2, {(`XLEN-8-4){1'b0}}, rs1[3: 0]};
+                `TEST_NUM'b00010: test_data = {(romAddr + 1'b1), 4'h3, {(`XLEN-8-4){1'b0}}, rd[3: 0]};
+                `TEST_NUM'b00011: test_data = {(romAddr + 1'b1), 4'h4, {(`XLEN-8-2){1'b0}}, rfSrc_wd};
+                // 5.
+                `TEST_NUM'b00100: test_data = {(romAddr + 1'b1), 4'h5, imm_out[23: 0]};
+                `TEST_NUM'b00101: test_data = {{romAddr + 1'b1}, 4'h6, {(`XLEN-8-4){1'b0}}, aluCtrl};
+                `TEST_NUM'b00110: test_data = {{romAddr + 1'b1}, 4'h7, alu_out[23: 0]};
+                `TEST_NUM'b00111: test_data = {{romAddr + 1'b1}, 4'h8, 4'b0000, 4'b1000, dm_out[19: 0]};
                 default: 
                     test_data = 32'hFFFFFFFF;
             endcase
-            test_addr = test_addr + 1'b1;
+
+            if(!sw_i[2])    // test 置 1 时手动断点。
+                test_addr = test_addr + 1'b1; 
+            else
+                test_addr = test_addr;
         end
     end
 
@@ -238,12 +246,12 @@ module main(
 
     always@(sw_i) begin
       case(sw_i[14:11])
-        // 4'b1000: display_data = test_data;
-        4'b0100: display_data <= reg_data;
-        4'b0010: display_data <= alu_data;
-        4'b0001: display_data <= dm_data;
+        4'b1000: display_data = test_data;
+        4'b0100: display_data = reg_data;
+        4'b0010: display_data = alu_data;
+        4'b0001: display_data = dm_data;
         default:
-            display_data <= instr;
+            display_data = instr;
     endcase
     end
 

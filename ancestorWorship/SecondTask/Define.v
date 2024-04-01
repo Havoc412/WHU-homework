@@ -10,7 +10,7 @@
 `define IMEM_NUM  1024  // info dat 读取的 0x 指令。
 `define IMEM_WIDTH 32
 `define DMEM_NUM  1024
-`define DMEM_WIDTH 10
+`define DMEM_WIDTH 8
 
 `define INSTR_NUM  1  // info 在这里修改总指令数量。
 `define INSTR_WIDTH 4
