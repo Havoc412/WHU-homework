@@ -26,8 +26,10 @@ int main()
 					break;
 				}
 			}
-			string temp = instruct.substr(pos, INSTRUCT_LEN);
-			vec.emplace_back(temp);
+			if(pos) {
+				string temp = instruct.substr(pos, INSTRUCT_LEN);
+				vec.emplace_back(temp);
+			}
 		}
 
 		for(int i=0; i<vec.size(); i++) {

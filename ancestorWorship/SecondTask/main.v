@@ -63,7 +63,7 @@ module main(
     // tag Ctrl - wire !!!!
     wire regWrite, memWrite;
     wire [3: 0] aluCtrl;
-    wire [6: 0] extCtrl;
+    wire [5: 0] extCtrl;
     wire [1: 0] lwhb, swhb;
 
     wire [1: 0] rfSrc_wd;
@@ -123,7 +123,7 @@ module main(
 
     // test SHOW - 每次拿出来一位 RF
     parameter RF_ST = 5;
-    parameter RF_END = 8;   // info 展示 x5 ~ x8
+    parameter RF_END = 9;   // info 展示 x5 ~ x8
     reg [`XLEN-1: 0] reg_data; // dt1, dt2;
     reg [`RFIDX_WIDTH-1: 0] reg_addr;
     always @ (posedge CLK_CPU or negedge rstn) begin
@@ -148,13 +148,13 @@ module main(
         .zero(zero)
     );
 
-        // ALU - MUX
+    // ALU - MUX
     mux2 #(`XLEN) aluMux (.d0(dt2), .d1(imm_out), .src(aluSrc_b), .out(b));
 
     // test SHOW - 也只是展示用，实际计算无用
     reg [`XLEN-1: 0] alu_data;
     reg [2: 0] alu_addr;
-    parameter ALU_NUM = 4;
+    parameter ALU_NUM = 7;
     always @ (posedge CLK_CPU or negedge rstn) begin
         if(!rstn)
             alu_addr = 3'b0;
@@ -168,6 +168,9 @@ module main(
                 3'b001: alu_data = {4'b0010, b[27: 0]};
                 3'b010: alu_data = {4'b0011, alu_out[27: 0]};
                 3'b011: alu_data = {4'b0100, {(`XLEN-4-1){1'b0}}, zero};
+                3'h4: alu_data = {4'h5, {(`XLEN-4-1){1'b0}}, aluSrc_b};
+                3'h5: alu_data = {4'h6, dt2[27: 0]};
+                3'h6: alu_data = {4'h7, imm_out[27: 0]};
                 default: 
                     alu_data = 32'hFFFFFFFF;
             endcase
@@ -210,7 +213,7 @@ module main(
 
     `define TEST_NUM 8
     reg [2: 0] test_addr;
-    parameter TEST_NUM = 7;
+    parameter TEST_NUM = 8;
     always@(posedge clk_test or negedge rstn) begin
         if(!rstn)
             test_addr = 3'b0;
@@ -228,7 +231,7 @@ module main(
                 `TEST_NUM'b00100: test_data = {(romAddr + 1'b1), 4'h5, imm_out[23: 0]};
                 `TEST_NUM'b00101: test_data = {{romAddr + 1'b1}, 4'h6, {(`XLEN-8-4){1'b0}}, aluCtrl};
                 `TEST_NUM'b00110: test_data = {{romAddr + 1'b1}, 4'h7, alu_out[23: 0]};
-                `TEST_NUM'b00111: test_data = {{romAddr + 1'b1}, 4'h8, 4'b0000, 4'b1000, dm_out[19: 0]};
+                `TEST_NUM'b00111: test_data = {{romAddr + 1'b1}, 4'h8, {(`XLEN-8-6){1'b0}}, extCtrl};
                 default: 
                     test_data = 32'hFFFFFFFF;
             endcase

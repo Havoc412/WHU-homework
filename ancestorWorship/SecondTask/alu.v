@@ -26,6 +26,10 @@ module ALU(
             `ALU_CTRL_MOVEA: aluout <= a;
             `ALU_CTRL_ADD:   aluout <= sum[`XLEN-1: 0];
             `ALU_CTRL_ADDU:  aluout <= sum[`XLEN-1: 0];
+
+            `ALU_CTRL_SLL:   aluout <= a << b;
+
+
             `ALU_CTRL_LUI:   aluout <= sum[`XLEN-1: 0]; //a = 0, b = immout
 		    `ALU_CTRL_AUIPC: aluout <= sum[`XLEN-1: 0]; //a = pc, b = immout
 		    default: 	     aluout <= `XLEN'b0; 

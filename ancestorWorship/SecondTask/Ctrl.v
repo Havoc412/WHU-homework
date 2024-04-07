@@ -80,7 +80,8 @@ module Ctrl(
 
         // tag Opcode
     wire shamt = slli | srli | srai;
-    wire itype = addri | load;     // info laod 和 immALU 相同。
+    // info shamt 属于 itype 的 分支
+    wire itype = (addri | load) & ~shamt;     // info laod 和 immALU 相同。
     assign iType = addri | jalr;   // info 添加 jalr ！
 
     wire stype = store;
@@ -98,7 +99,7 @@ module Ctrl(
     assign l_unsigned = 0;
 
     assign memWrite = 0;
-    assign regWrite = lui | auipc | addi; // mark 感觉只是部分的指令。
+    assign regWrite = lui | auipc | addi | slli; // mark 感觉只是部分的指令。
     assign memToReg = 0;
 
         // tag src
@@ -118,6 +119,7 @@ module Ctrl(
             `I_TYPE: 
                 case(funct3)
                     `FUNCT3_ADDI: aluCtrl <= `ALU_CTRL_ADD;
+                    `FUNCT3_SLLI: aluCtrl <= `ALU_CTRL_SLL;
 
                     default: aluCtrl <= `ALU_CTRL_ZERO;	
                 endcase
