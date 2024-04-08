@@ -18,3 +18,10 @@ module mux3 #(parameter WIDTH = 8) (
 
     assign out = src[1] ? d2 : (src[0] ? d1 : d0);  // info 注意 define 和 d0~2 之间的对应。（ps. 不然等着 debug 不出来吧...）
 endmodule
+
+// info 对于 ip核 的特化
+module rom_addr(
+    input [`INSTR_WIDTH-1: 0] a
+);
+
+endmodule

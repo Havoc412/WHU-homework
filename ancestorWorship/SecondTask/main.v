@@ -30,13 +30,13 @@ module main(
 
     // tag ROM 实例化
     wire [`XLEN-1: 0] instr;
-    reg [`INSTR_WIDTH-1: 0] romAddr;
+    reg  [`INSTR_WIDTH-1: 0] romAddr;
     dist_mem_gen_0 U_IM(
         .a(romAddr),
         .spo(instr)
     );
 
-    // test rom-addr 遍历 相当于 PC += 4
+    // rom-addr 遍历 相当于 PC += 4
     always @ (posedge CLK_CPU or negedge rstn) begin
         if(!rstn)
             romAddr = 4'b0;
@@ -44,6 +44,8 @@ module main(
             if(sw_i[1] == 1'b0) begin      // info 模拟PC默认自增
                 if(romAddr == `INSTR_NUM)  // info 暂时强制只跑一遍
                     romAddr = 4'b0;
+                else if(pcSrc && zero)  // info 4.7 先这样处理吧
+                    romAddr = romAddr + imm_out / 4;
                 else
                     romAddr = romAddr + 1'b1;
             end else
@@ -68,8 +70,7 @@ module main(
 
     wire [1: 0] rfSrc_wd;
     wire aluSrc_b;
-
-    wire zero;
+    wire pcSrc, zero;
 
     // tag Ctrl 实例化
     Ctrl U_Ctrl (
@@ -80,9 +81,9 @@ module main(
 
         .lwhb(lwhb), .swhb(swhb),
         .aluSrc_b(aluSrc_b), .rfSrc_wd(rfSrc_wd),
-        // .ALUSrc(ALUSrc), .WDSrc(WDSrc), .DMType(DMType),
 
-        .zero(zero)
+        .zero(zero), 
+        .pcSrc(pcSrc)
     );
 
     // tag imm 实例化
@@ -225,13 +226,13 @@ module main(
             case(test_addr)
                 `TEST_NUM'b00000: test_data = {(romAddr + 1'b1), 4'h1, {(`XLEN-8-1){1'b0}}, regWrite};
                 `TEST_NUM'b00001: test_data = {(romAddr + 1'b1), 4'h2, {(`XLEN-8-4){1'b0}}, rs1[3: 0]};
-                `TEST_NUM'b00010: test_data = {(romAddr + 1'b1), 4'h3, {(`XLEN-8-4){1'b0}}, rd[3: 0]};
-                `TEST_NUM'b00011: test_data = {(romAddr + 1'b1), 4'h4, {(`XLEN-8-2){1'b0}}, rfSrc_wd};
+                `TEST_NUM'b00010: test_data = {(romAddr + 1'b1), 4'h3, {(`XLEN-8-4){1'b0}}, rs2[3: 0]};
+                `TEST_NUM'b00011: test_data = {(romAddr + 1'b1), 4'h4, {(`XLEN-8-4){1'b0}}, rd[3: 0]};
                 // 5.
                 `TEST_NUM'b00100: test_data = {(romAddr + 1'b1), 4'h5, imm_out[23: 0]};
                 `TEST_NUM'b00101: test_data = {{romAddr + 1'b1}, 4'h6, {(`XLEN-8-4){1'b0}}, aluCtrl};
                 `TEST_NUM'b00110: test_data = {{romAddr + 1'b1}, 4'h7, alu_out[23: 0]};
-                `TEST_NUM'b00111: test_data = {{romAddr + 1'b1}, 4'h8, {(`XLEN-8-6){1'b0}}, extCtrl};
+                `TEST_NUM'b00111: test_data = {{romAddr + 1'b1}, 4'h8, {(`XLEN-8-1){1'b0}}, pcSrc};
                 default: 
                     test_data = 32'hFFFFFFFF;
             endcase

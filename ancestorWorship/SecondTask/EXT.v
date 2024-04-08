@@ -18,7 +18,7 @@ module EXT(
     always @ (*) begin
         case (extCtrl)
             `EXT_CTRL_SHAMT:    immout <= { 27'b0, iimm_shamt[4: 0]};
-            `EXT_CTRL_ITYPE:    immout <= { { (`XLEN-12){ iimm[11]}}, iimm[11: 0]}; // info 两种写法。
+            `EXT_CTRL_ITYPE:    immout <= { {(`XLEN-12){ iimm[11]}}, iimm[11: 0]}; // info 两种写法。
             `EXT_CTRL_STYPE:	immout <= { {20{ simm[11]}}, simm[11: 0]};
             // info U: 大立即数
             `EXT_CTRL_UTYPE:	immout <= { uimm[19: 0], 12'b0}; 

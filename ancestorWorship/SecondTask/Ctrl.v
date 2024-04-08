@@ -6,7 +6,7 @@ module Ctrl(
     input [6: 0] funct7,
     input [`RFIDX_WIDTH-1: 0] rd, rs1,
     input [11: 0] imm,
-    input zero, lt, 
+    input zero, lt,  // question zero 作为 ALU 的输出，em，如何作为 Ctrl 的输入...
     
     output regWrite, memWrite, memToReg, // question memToReg?
     output [1: 0] lwhb, swhb, // type of read && store
@@ -15,7 +15,7 @@ module Ctrl(
     output [5: 0] extCtrl,
     output reg [3: 0] aluCtrl, // reg -> 用 always 赋值, // question 不确定有无 BUG,
 
-    output  pcSrc,
+    output pcSrc,   // info 因为有 jal 的存在，所以 0 代表 pc++，1 代表 pc ~ bType 
     output [1: 0] rfSrc_wd,
     // output [1: 0] aluSrc_a, // question
     output aluSrc_b 
@@ -93,8 +93,8 @@ module Ctrl(
     assign extCtrl = {shamt, itype, stype, btype, utype, jal};
 
 // todo 补充...
-    assign Jal = 0;
-    assign Jalr = 0;
+    assign Jal = jal;
+    assign Jalr = jalr;
     assign b_unsigned = 0;
     assign l_unsigned = 0;
 
@@ -103,10 +103,10 @@ module Ctrl(
     assign memToReg = 0;
 
         // tag src
-    assign pcSrc = 0; // todo ...
+    assign pcSrc = btype; // todo ...
     // assign aluSrc_a = lui ? 2'b01 : (auipc ? 2'b10 : 2'b00); // 6, miao // todo
     assign rfSrc_wd = { utype | jtype, load}; // bug wait test
-    assign aluSrc_b = lui | auipc | addi;
+    assign aluSrc_b = lui | auipc | shamt | addi;
     
     assign lwhb = lb ? `SL_B : (lh ? `SL_H : `SL_W);
     assign swhb = sb ? `SL_B : (sh ? `SL_H : `SL_W);
@@ -123,7 +123,11 @@ module Ctrl(
 
                     default: aluCtrl <= `ALU_CTRL_ZERO;	
                 endcase
-            
+            `R_TYPE: 
+                if(sub)
+                    aluCtrl <= `ALU_CTRL_SUB;
+            `B_TYPE:
+                aluCtrl <= `ALU_CTRL_SUB;   // info 全员做减法。
             default: aluCtrl <= `ALU_CTRL_ZERO;
         endcase
     end

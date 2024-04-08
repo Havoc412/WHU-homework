@@ -12,7 +12,7 @@
 `define DMEM_NUM  1024
 `define DMEM_WIDTH 8
 
-`define INSTR_NUM  1  // info 在这里修改总指令数量。
+`define INSTR_NUM  5  // info 在这里修改总指令数量。
 `define INSTR_WIDTH 4
 
 // 1. base Type -> OpCode

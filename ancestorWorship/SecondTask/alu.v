@@ -8,8 +8,8 @@ module ALU(
     output reg [`XLEN-1: 0] aluout,
     output overflow,
     output zero, // 相当于ZF，方便bne，beq的判断;
-    output lt,  // question 
-	output ge // question
+    output lt,   // question 
+	output ge    // question
     );
 
     // info unsigned 为 key...
@@ -26,9 +26,9 @@ module ALU(
             `ALU_CTRL_MOVEA: aluout <= a;
             `ALU_CTRL_ADD:   aluout <= sum[`XLEN-1: 0];
             `ALU_CTRL_ADDU:  aluout <= sum[`XLEN-1: 0];
+            `ALU_CTRL_SUB:   aluout <= a - b;
 
             `ALU_CTRL_SLL:   aluout <= a << b;
-
 
             `ALU_CTRL_LUI:   aluout <= sum[`XLEN-1: 0]; //a = 0, b = immout
 		    `ALU_CTRL_AUIPC: aluout <= sum[`XLEN-1: 0]; //a = pc, b = immout
@@ -37,6 +37,7 @@ module ALU(
     end
 
     assign overflow = sum[`XLEN-1] ^ sum[`XLEN];    // question
+    // info 这三个都是用于 Btype 的，通过判断符号位的大小。
     assign zero = (aluout == `XLEN'b0);
     assign lt = aluout[`XLEN-1];
     assign ge = ~aluout[`XLEN-1];
