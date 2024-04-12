@@ -12,7 +12,7 @@
 `define DMEM_NUM  1024
 `define DMEM_WIDTH 8
 
-`define INSTR_NUM  5  // info 在这里修改总指令数量。
+`define INSTR_NUM  4  // info 在这里修改总指令数量。
 `define INSTR_WIDTH 4
 
 // 1. base Type -> OpCode
@@ -26,8 +26,7 @@
 `define U_LUI   7'b0110111  // imm -> rd
 `define U_AUIPC 7'b0010111  // imm + PC -> rd
 
-`define J_JAL   7'b1101111  // imm20(expand signed 符号扩展 && <<1) + PC / nextPC -> rd
-                            // mark imm 错位的设计
+`define J_JAL   7'b1101111  // imm20(expand signed 符号扩展 && <<1) + PC / nextPC -> rd // mark imm 错位的设计
 `define J_JALR  7'b1100111  // imm12 + rs1 (end 0) / nextPC -> rd
 
 // 2.1 func3

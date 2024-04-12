@@ -42,8 +42,9 @@ module main(
             romAddr = 4'b0;
         else
             if(sw_i[1] == 1'b0) begin      // info 模拟PC默认自增
-                if(romAddr == `INSTR_NUM)  // info 暂时强制只跑一遍
-                    romAddr = 4'b0;
+                if(romAddr == `INSTR_NUM) 
+                    // romAddr = 4'b0;
+                    romAddr = romAddr;      // info 暂时强制只跑一遍
                 else if(pcSrc && zero)  // info 4.7 先这样处理吧
                     romAddr = romAddr + imm_out / 4;
                 else
@@ -71,6 +72,7 @@ module main(
     wire [1: 0] rfSrc_wd;
     wire aluSrc_b;
     wire pcSrc, zero;
+    wire jal, jalr; // info 增加
 
     // tag Ctrl 实例化
     Ctrl U_Ctrl (
