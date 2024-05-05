@@ -39,19 +39,6 @@ module main(
         .a(romAddr),
         .spo(instr)
     );
-    // info rom-addr 遍历 相当于 PC += 4, // test 接下来使用 pc 来处理
-        // always @ (posedge CLK_CPU or negedge rstn) begin
-        //     if(!rstn)
-        //         romAddr <= 32'b0;
-        //     else
-        //         if(sw_i[1] == 1'b0) begin      // info 模拟PC默认自增
-        //             if(romAddr == `INSTR_NUM) 
-        //                 romAddr <= romAddr;      // info 暂时强制只跑一遍
-        //             else
-        //                 romAddr <= romAddr + 1'b1;
-        //         end else
-        //             romAddr <= romAddr;
-        // end
 
     // tag data memory
     wire memWrite;
@@ -69,10 +56,6 @@ module main(
             dm_addr = 10'h3f8;
         else begin
             dm_data = {dm_addr[7: 0], {(`XLEN-20-6){1'b0}}, romAddr, 4'h0, U_DM.dmem[dm_addr]};
-            // if(!sw_i[3])
-            //     dm_addr = dm_addr - 10'h4;
-            // if(dm_addr < DM_DATA_SHOW)
-            //     dm_addr = 10'h3fc;
         end
     end
 
@@ -146,7 +129,7 @@ module havRiscV (
         // info from ctrl
         immCtrlD, itypeD, jalD, jalrD, bunsignedD, lunsignedD,
             // Src
-        pcsrcD, aluCtrlD, aluSrcAD, aluSrcBD,   // question aluSrcAD 没有处理
+        pcsrcD, aluCtrlD, aluSrcAD, aluSrcBD,
         memWriteD, lwhbD, swhbD, 
         memToRegD, regWriteD,
         // to Ctrl

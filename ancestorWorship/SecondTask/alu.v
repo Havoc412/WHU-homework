@@ -2,7 +2,6 @@
 
 module ALU(
     input [`XLEN-1: 0] a, b,
-    // input [4: 0] shamt, // question 有必要单独处理吗？
     input [3: 0] aluCtrl,
 
     output reg [`XLEN-1: 0] aluout,
@@ -16,7 +15,7 @@ module ALU(
     // info differentiate SUB and AND by aluCtrl[3]
     wire [`XLEN-1: 0] bb = aluCtrl[3] ? ~b : b;
     
-    // 拓宽，以防溢出 // question 【+aluCtrl[3]】 ?
+    // 拓宽，以防溢出
     wire [`XLEN-1: 0] sum = (unSigned & ({1'b0, a} + {1'b0, bb} + aluCtrl[3])) | (~unSigned & ({a[`XLEN-1], a} + {bb[`XLEN-1], bb} + aluCtrl[3]));
 
     always @(*) begin
@@ -34,13 +33,13 @@ module ALU(
             `ALU_CTRL_SRL:   aluout <= a >> b;
             `ALU_CTRL_SRA:   aluout <= $signed(a) >>> b; // info 自带的算术右移，不过会先判断是否【有符号数】。
 
-            `ALU_CTRL_LUI:   aluout <= sum[`XLEN-1: 0]; //a = 0, b = immout
-		    `ALU_CTRL_AUIPC: aluout <= sum[`XLEN-1: 0]; //a = pc, b = immout
+            `ALU_CTRL_LUI:   aluout <= sum[`XLEN-1: 0]; // a = 0, b = immout
+		    `ALU_CTRL_AUIPC: aluout <= sum[`XLEN-1: 0]; // a = pc, b = immout
 		    default: 	     aluout <= `XLEN'b0; 
         endcase
     end
 
-    assign overflow = sum[`XLEN-1] ^ sum[`XLEN];    // question
+    // assign overflow = sum[`XLEN-1] ^ sum[`XLEN];
     // info 这三个都是用于 Btype 的，通过判断符号位的大小。
     assign zero = (aluout == `XLEN'b0);
     assign lt = aluout[`XLEN-1]; // info 小于则跳转

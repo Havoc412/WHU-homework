@@ -6,17 +6,15 @@ module Ctrl(
     input [6: 0] funct7,
     input [`RFIDX_WIDTH-1: 0] rd, rs1,
     input [11: 0] imm,
-    // input zero, lt,  // question zero 作为 ALU 的输出，em，如何作为 Ctrl 的输入...
     
-    output regWrite, memWrite, memToReg, // question memToReg?
+    output regWrite, memWrite, memToReg,
     output [1: 0] lwhb, swhb, // type of read && store
     output iType, Jal, Jalr, b_unsigned, l_unsigned, // info 为了区分，我使用了大写的 J。
                
     output [5: 0] extCtrl,
-    output reg [3: 0] aluCtrl, // reg -> 用 always 赋值, // question 不确定有无 BUG,
+    output reg [3: 0] aluCtrl, // reg -> 用 always 赋值 
     output reg [`BRANCH_CTRL_WIDTH-1: 0] pcBranchSrc,   // info 因为有 jal 的存在，所以 0 代表 pc+4，1 代表 pc ~ bType 
     output [1: 0] rfSrc_wd,
-    // output [1: 0] aluSrc_a, // question
     output aluSrc_b // info 判断 alu2 <- immOut，优先级高于 forward
     );
 
@@ -81,7 +79,7 @@ module Ctrl(
     wire shamt = slli | srli | srai;
     // info shamt 属于 itype 的 分支
     wire itype = addri | load ;     // info load 和 immALU 相同。
-    assign iType = addri | jalr;   // info 添加 jalr ！
+    assign iType = addri | jalr;    // info 添加 jalr
 
     wire stype = store;
     wire btype = branch;
@@ -97,12 +95,10 @@ module Ctrl(
     assign l_unsigned = 0;
 
     assign memWrite = stype;
-    assign regWrite = lui | auipc | itype | jal | addrr; // mark 只是部分的指令。 // todo
-    assign memToReg = load; // question itype 也包括了 load，不确定会不会有BUG。
+    assign regWrite = lui | auipc | itype | jal | addrr; // todo 只是部分的指令。
+    assign memToReg = load;
 
         // tag src
-    // assign pcBranchSrc = btype; // todo ...
-    // assign aluSrc_a = lui ? 2'b01 : (auipc ? 2'b10 : 2'b00); // 6, miao // todo
     assign rfSrc_wd = { jtype, load }; // bug wait test // info ori: assign rfSrc_wd = { utype | jtype, load};
     assign aluSrc_b = lui | auipc | itype | stype; // todo 关于 Itype 指令，暂时只考虑了 addi，如果需要其他的再添加。
     assign lwhb = lb ? `SL_B : (lh ? `SL_H : (lw ? `SL_W : `SL_ZERO));

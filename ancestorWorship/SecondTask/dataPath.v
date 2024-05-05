@@ -6,7 +6,6 @@
 `include "seg7x16.v"
 `include "pcCtrl.v"
 `include "forwardUnit.v"
-// `include "pipeReg.sv"
 
 module datapath (
     input clk, rstn, BTNC,
@@ -53,9 +52,7 @@ module datapath (
     wire stall; // info 处理 load 数据冒险
     hazard U_hazerd(
         clk, rstn,
-        // info 提前一个周期
         instrF[19: 15], instrF[24: 20], rdD, memToRegD,
-
         stall
     );
 
@@ -90,7 +87,7 @@ module datapath (
     floprc #(`INSTR_SIZE) pr1D(clk, rstn, flushD, instrF, instrD); // instr
     floprc #(`ADDR_SIZE) pr2D(clk, rstn, flushD, pcF, pcD); // pc
 
-    // mark Decode instr
+    // Decode instr
     wire [`RFIDX_WIDTH-1: 0] rdD, rs1D,  rs2D;
     assign opD = instrD[6: 0];
     assign rdD = instrD[11: 7];
@@ -136,7 +133,6 @@ module datapath (
     // test RF show
     parameter RF_ST = 5;
     parameter RF_END = 10;   // info 展示 x5 ~ RF_END-1
-    // wire reg [`XLEN-1: 0] reg_data; // dt1, dt2; // info 在 output 中定义了。
     reg [`RFIDX_WIDTH-1: 0] reg_addr;
     always @ (posedge CLK_TEST or negedge rstn) begin
         if(!rstn)
@@ -193,10 +189,8 @@ module datapath (
         forward_a, forward_b
     );
 
-    // mux
-    // mux3 #(`XLEN) srcAmux(srcA1E, 0, pcE, aluSrcAD, srcAE); // info 处理前递，因为 branchUnit 的缘故，不需要 ALU 计算 nextPC 了。
-    // mux2 #(`XLEN) srcBmux(srcB1E, immOutE, aluSrcBE, srcBE);
 
+    // tag mux
     mux3 #(`XLEN) srcAmux(srcA1E, writeDataW, aluOutM, forward_a, srcAE);
     mux4 #(`XLEN) srcBmux(srcB1E, writeDataW, aluOutM, immOutE, {aluSrcBE, forward_b}, srcBE);
 
@@ -258,8 +252,8 @@ module datapath (
 
     // info 记录 rs2，用于 sw 写入 MEM。// info 处理 load 冒险, 
     floprc #(`XLEN) pr4M(clk, rstn, flushE, rs2DataE, writeDataM);
-    assign adderM = aluOutM[`DMEM_WIDTH-1: 0];
-    // info writeDataM 用于 Mem，writeDataW 用于 RF
+    assign adderM = aluOutM[`DMEM_WIDTH-1: 0]; // info writeDataM 用于 Mem，writeDataW 用于 RF
+    
 
     // mark MEM / WB ------------------------------------
     wire regWriteW, memToRegW, JALW;
@@ -268,7 +262,7 @@ module datapath (
 
     // data
     wire [`XLEN-1: 0] aluOutW, readDataW;
-    wire [`ADDR_SIZE-1: 0] pcW; //, pcPlus4W;
+    wire [`ADDR_SIZE-1: 0] pcW;
     wire [`RFIDX_WIDTH-1: 0] rdW;
 
     floprc #(`XLEN) pr1W(clk, rstn, flushW, aluOutM, aluOutW);
@@ -280,53 +274,20 @@ module datapath (
     assign writeDataW = memToRegW ? readDataW : JALW ? (pcW + 4) : aluOutW;  // info 不用一直传递 32位 pcPlus4 的版本
     assign writeAddrW = rdW;
 
-    // ----------------------------------------
-    reg [`XLEN-1: 0] test_data;
-    `define TEST_NUM 7
-    reg [2: 0] test_addr;
-    // parameter TEST_NUM = 7; // info
-    always@(posedge CLK_TEST or negedge rstn) begin
-        if(!rstn)
-            test_addr = 3'b0;
-        else if(sw_i[14]) begin                
-            // re
-            if(test_addr == `TEST_NUM)
-                test_addr = 5'b0;
-            // normal
-            case(test_addr)
-                `TEST_NUM'h0: test_data = {4'h1, aluOutE[27: 0]};
-                `TEST_NUM'h1: test_data = {4'h2, aluOutM[27: 0]};
-                `TEST_NUM'h2: test_data = {4'h3, readDataM[27: 0]};
-                `TEST_NUM'h3: test_data = {4'h4, {(`XLEN-4-5){1'b0}}, rdW};
-                `TEST_NUM'h4: test_data = {4'h5, {(`XLEN-4-8-8){1'b0}}, aluCtrlE, {2'b0}, lwhbM, {2'b0}, swhbM, {3'b0}, memWriteM};
-                `TEST_NUM'h5: test_data = {4'h6, {(`XLEN-4-8){1'b0}}, adderM};
-                `TEST_NUM'h5: test_data = {4'h7, writeDataM[27: 0]};
-                default: 
-                    test_data = 32'hFFFFFFFF;
-            endcase
-
-            if(!sw_i[2])    // test 置 1 时手动断点。
-                test_addr = test_addr + 1'b1; 
-            else
-                test_addr = test_addr;
-        end
-    end
     // mark test show seg7x16
     reg [`XLEN-1: 0] display_data;
     always@(sw_i) begin
       case(sw_i[14: 11])
-        4'b1000: display_data = test_data;
+        4'b1000: display_data = { pcF[7: 0], instrF[23: 0]};
         4'b0100: display_data = reg_data;
         4'b0010: display_data = alu_data;
         4'b0001: display_data = dm_data;
-        4'b1100: display_data = { pcF[7: 0], instrF[23: 0]};
         default:
             display_data = {pcF[9: 2], nextPcF[9: 2], pcD[9: 2], pcE[9: 2]};
-            // display_data = {pcF[9: 2], nextPcF[9: 2], pcPlus4D[9: 2], pcD[9: 2]};
         endcase
     end
 
-    // test 
+    // test for show
     seg7x16 u_seg7x16(
         .clk(CLK_SEG),
         .rstn(rstn),
