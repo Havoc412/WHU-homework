@@ -4,7 +4,7 @@ module seg7x16(
         // 特殊的图�???/文本模式
         input disp_mode,
 
-        input [63:0] i_data,
+        input [31: 0] i_data,
         output [7:0] o_seg,
         output [7:0] o_sel
     );
@@ -51,7 +51,8 @@ module seg7x16(
     // 分段拆分data -> 8
     reg [7:0] seg_data_r;
     always @ (*)
-        if(disp_mode == 1'b0)
+        // if(disp_mode == 1'b0)
+        if(1) // info 强制单纯的数字预处理
             begin
                 case(seg7_addr)
                     0: seg_data_r = i_data_store[3:  0];

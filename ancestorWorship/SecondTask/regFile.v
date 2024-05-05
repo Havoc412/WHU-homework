@@ -7,19 +7,18 @@ module RF(
     input [`XLEN-1: 0] wd,
 
     output [`XLEN-1: 0] dt1, dt2,   // info data
-
-    input [`INSTR_NUM-1: 0] pc // test
+    input [4: 0] n
     );
 
     reg [`XLEN-1: 0] rf [`RFREG_NUM-1: 0];
 
     integer i;
     always @ (negedge clk or negedge rst) begin
-        $display("RF: pc = %h: x%d = %h", pc, A3, wd);  // test
-        // test reset
-        if(!rst)
+        if(!rst) begin
             for(i=0; i<32; i = i+1)
                 rf[i] = 32'b0;
+            rf[6] = n;  // info 特化 对于 fib 代码之于 n 的初始化。
+        end
         else if(regWrite && A3 != 0) begin  // 写信号 && 排除 x0;
             rf[A3] <= wd;
         end

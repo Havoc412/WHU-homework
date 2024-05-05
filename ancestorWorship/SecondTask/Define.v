@@ -1,4 +1,4 @@
-// 0. ISA
+// 0.
 
 `define XLEN 32
 `define XLEN_WIDTH 5
@@ -6,14 +6,16 @@
 `define RFREG_NUM 32
 `define RFIDX_WIDTH 5
 
-`define ADDR_WIDTH  10
-`define IMEM_NUM  1024  // info dat 读取的 0x 指令。
+`define IMEM_NUM 32  // info dat 读取的 0x 指令。// question 能存在下吗
 `define IMEM_WIDTH 32
 `define DMEM_NUM  1024
 `define DMEM_WIDTH 8
 
-`define INSTR_NUM  4  // info 在这里修改总指令数量。
+`define ADDR_WIDTH  10
+`define ADDR_SIZE 32 // question ADDR 和 INSTR 的区别
+`define INSTR_NUM 22  // info 在这里修改总指令数量。
 `define INSTR_WIDTH 4
+`define INSTR_SIZE 32   // 32 bit 指令长度
 
 // 1. base Type -> OpCode
 `define I_TYPE  7'b0010011   // imm - ALU
@@ -100,8 +102,9 @@
 // 4. Ctrl
     // tag ALU CODE
 `define ID_ALU_WIDTH 16
+`define ALU_CTRL_WIDTH 4
 
-`define	ALU_CTRL_MOVEA 4'b0000 // question ?
+`define	ALU_CTRL_MOVEA 4'b0000 // info 防止默认值触发。
 
 `define ALU_CTRL_ADD   4'b0001
 `define ALU_CTRL_ADDU  4'b0010
@@ -136,9 +139,10 @@
     // tag lwhb && swhb
 `define SL_WIDTH 2
 
-`define SL_B 2'b00
-`define SL_H 2'b01
-`define SL_W 2'b10
+`define SL_ZERO 2'b00
+`define SL_B 2'b01
+`define SL_H 2'b10
+`define SL_W 2'b11
 
     // tag WD From - Ctrl
 `define WD_WIDTH 2
@@ -146,3 +150,23 @@
 `define WD_CTRL_ALU 2'b00
 `define WD_CTRL_MEM 2'b01
 `define WD_CTRL_PC  2'b10   
+
+    // tag Btype - Ctrl
+`define BRANCH_CTRL_WIDTH 3
+
+`define BRANCH_CTRL_ZERO 3'b000
+// info 禁止 3'b000，因为默认值如此，会导致一直触发 beq 跳转，同时因为 zeroE 的默认值也会 0 ？
+`define BRANCH_CTRL_BEQ  3'b001
+`define BRANCH_CTRL_BNE  3'b010
+`define BRANCH_CTRL_BLT  3'b011
+`define BRANCH_CTRL_BGE  3'b100
+`define BRANCH_CTRL_BLTU 3'b101
+`define BRANCH_CTRL_BGEU 3'b110
+
+
+// tag  forward
+`define FORWARD_WIDTH 2
+
+`define FORWARD_ZERO 2'b00
+`define FORWARD_MEM  2'b01
+`define FORWARD_EX   2'b10  // info 优先级更高

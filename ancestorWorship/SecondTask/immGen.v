@@ -1,6 +1,6 @@
 `include "Define.v"
 
-module EXT( 
+module immGen ( 
     input clk,
 
     input [4: 0]    iimm_shamt,
@@ -10,7 +10,7 @@ module EXT(
     input [19:0]	uimm,
     input [19:0]	jimm_jal,
 
-    input [6: 0]	extCtrl,
+    input [5: 0]	extCtrl,
 
     output reg [31:0] immout
     );

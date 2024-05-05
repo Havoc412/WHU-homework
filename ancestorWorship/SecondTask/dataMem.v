@@ -1,7 +1,7 @@
 `include "Define.v"
 
 // info 单周期应该用不到这个。
-// question 好像是存储 指令 用的模块。 -> 确实。
+// 好像是存储 指令 用的模块。 -> 确实。// 不过我用 IP 核就是了。
 module IM(
     input [`ADDR_WIDTH-1: 0] addr,
     
@@ -13,28 +13,29 @@ module IM(
 endmodule
 
 module DM(
-    input clk, rst,
+    // ctrl sign
+    input clk, rstn,
     input memWrite, 
-    // input sw_1, // test debug, 不过我一步步执行，也不用不太到。    
-    input [`XLEN-1: 0]  wd,
-    input [`DMEM_WIDTH-1: 0] addr,
     input [`SL_WIDTH-1: 0] lwhb, swhb,
 
-    output reg [`XLEN-1: 0] dt,
+    // data change
+    input [`DMEM_WIDTH-1: 0] addr,
+    input [`XLEN-1: 0]  wd,
 
-    input [`INSTR_NUM-1: 0] pc // test
+    output reg [`XLEN-1: 0] dt
     );
 
-    reg [`DMEM_WIDTH: 0] dmem [`DMEM_NUM: 0];
+    reg [`DMEM_WIDTH-1: 0] dmem [`DMEM_NUM-1: 0];
 
     // 处理 store
     integer i;
-    always @ (negedge clk or negedge rst) begin
-        if(!rst)
+    always @ (negedge clk or negedge rstn) begin
+        if(!rstn) begin
             for(i=0; i<`DMEM_NUM; i = i+1)
                 dmem[i] = 8'b0;
-        else
-        if(memWrite) begin
+            dmem[0] = 4; // test 检查一下 能否读到。
+        end
+        else if(memWrite) begin
             case(swhb)
                 `SL_B: dmem[addr] <= wd[7: 0];
                 `SL_H: begin
@@ -48,7 +49,6 @@ module DM(
                     dmem[addr+3] <= wd[31: 24];
                 end
             endcase
-            $display("pc = %h: dataaddr = %h, memdata = %h", pc, addr, wd);
         end
     end
 
@@ -59,6 +59,8 @@ module DM(
             `SL_B: dt <= dmem[addr];
             `SL_H: dt <= { dmem[addr+1], dmem[addr]};
             `SL_W: dt <= { dmem[addr+3], dmem[addr+2], dmem[addr+1], dmem[addr]};
+            default :
+                dt <= `XLEN'b0;
         endcase
     end
 

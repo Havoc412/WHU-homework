@@ -6,19 +6,18 @@ module Ctrl(
     input [6: 0] funct7,
     input [`RFIDX_WIDTH-1: 0] rd, rs1,
     input [11: 0] imm,
-    input zero, lt,  // question zero 作为 ALU 的输出，em，如何作为 Ctrl 的输入...
+    // input zero, lt,  // question zero 作为 ALU 的输出，em，如何作为 Ctrl 的输入...
     
     output regWrite, memWrite, memToReg, // question memToReg?
     output [1: 0] lwhb, swhb, // type of read && store
-    output iType, Jal, Jalr, b_unsigned, l_unsigned,
-                // info 为了区分，我使用了大写的 J。
+    output iType, Jal, Jalr, b_unsigned, l_unsigned, // info 为了区分，我使用了大写的 J。
+               
     output [5: 0] extCtrl,
     output reg [3: 0] aluCtrl, // reg -> 用 always 赋值, // question 不确定有无 BUG,
-
-    output pcSrc,   // info 因为有 jal 的存在，所以 0 代表 pc++，1 代表 pc ~ bType 
+    output reg [`BRANCH_CTRL_WIDTH-1: 0] pcBranchSrc,   // info 因为有 jal 的存在，所以 0 代表 pc+4，1 代表 pc ~ bType 
     output [1: 0] rfSrc_wd,
     // output [1: 0] aluSrc_a, // question
-    output aluSrc_b 
+    output aluSrc_b // info 判断 alu2 <- immOut，优先级高于 forward
     );
 
     // 1.1
@@ -81,7 +80,7 @@ module Ctrl(
         // tag Opcode
     wire shamt = slli | srli | srai;
     // info shamt 属于 itype 的 分支
-    wire itype = (addri | load) & ~shamt;     // info laod 和 immALU 相同。
+    wire itype = addri | load ;     // info load 和 immALU 相同。
     assign iType = addri | jalr;   // info 添加 jalr ！
 
     wire stype = store;
@@ -90,44 +89,81 @@ module Ctrl(
     wire jtype = jal | jalr;  // 两者不同，无用。 -> rfSrc 有用
 
     // 4. 
-    assign extCtrl = {shamt, itype, stype, btype, utype, jal};
+    assign extCtrl = {shamt, itype & ~shamt , stype, btype, utype, jal};
 
-// todo 补充...
     assign Jal = jal;
     assign Jalr = jalr;
     assign b_unsigned = 0;
     assign l_unsigned = 0;
 
-    assign memWrite = 0;
-    assign regWrite = lui | auipc | addi | slli; // mark 感觉只是部分的指令。
-    assign memToReg = 0;
+    assign memWrite = stype;
+    assign regWrite = lui | auipc | itype | jal | addrr; // mark 只是部分的指令。 // todo
+    assign memToReg = load; // question itype 也包括了 load，不确定会不会有BUG。
 
         // tag src
-    assign pcSrc = btype; // todo ...
+    // assign pcBranchSrc = btype; // todo ...
     // assign aluSrc_a = lui ? 2'b01 : (auipc ? 2'b10 : 2'b00); // 6, miao // todo
-    assign rfSrc_wd = { utype | jtype, load}; // bug wait test
-    assign aluSrc_b = lui | auipc | shamt | addi;
-    
-    assign lwhb = lb ? `SL_B : (lh ? `SL_H : `SL_W);
-    assign swhb = sb ? `SL_B : (sh ? `SL_H : `SL_W);
+    assign rfSrc_wd = { jtype, load }; // bug wait test // info ori: assign rfSrc_wd = { utype | jtype, load};
+    assign aluSrc_b = lui | auipc | itype | stype; // todo 关于 Itype 指令，暂时只考虑了 addi，如果需要其他的再添加。
+    assign lwhb = lb ? `SL_B : (lh ? `SL_H : (lw ? `SL_W : `SL_ZERO));
+    assign swhb = sb ? `SL_B : (sh ? `SL_H : (sw ? `SL_W : `SL_ZERO));
 
         // tag aluCtrl // todo more...
     always @(*) begin 
+        pcBranchSrc <= `BRANCH_CTRL_ZERO; // info 取消后效性。
         case(opcode)
             `U_LUI: aluCtrl <= `ALU_CTRL_ADD;
             `U_AUIPC: aluCtrl <= `ALU_CTRL_ADD;
             `I_TYPE: 
-                case(funct3)
-                    `FUNCT3_ADDI: aluCtrl <= `ALU_CTRL_ADD;
-                    `FUNCT3_SLLI: aluCtrl <= `ALU_CTRL_SLL;
-
-                    default: aluCtrl <= `ALU_CTRL_ZERO;	
-                endcase
+                if(addi)
+                    aluCtrl <= `ALU_CTRL_ADD;
+                else if(slli)
+                    aluCtrl <= `ALU_CTRL_SLL;
+                else if(srli)
+                    aluCtrl <= `ALU_CTRL_SRL;
+                else if(andi)
+                    aluCtrl <= `ALU_CTRL_AND;
+                else
+                    aluCtrl <= `ALU_CTRL_ZERO;
             `R_TYPE: 
                 if(sub)
                     aluCtrl <= `ALU_CTRL_SUB;
-            `B_TYPE:
-                aluCtrl <= `ALU_CTRL_SUB;   // info 全员做减法。
+                else if(add)
+                    aluCtrl <= `ALU_CTRL_ADD;
+                else if(orr)
+                    aluCtrl <= `ALU_CTRL_OR;
+                else if(xorr)
+                    aluCtrl <= `ALU_CTRL_XOR;
+                else if(sll)
+                    aluCtrl <= `ALU_CTRL_SLL;
+                else if(sra)
+                    aluCtrl <= `ALU_CTRL_SRA;
+                else if(srl)
+                    aluCtrl <= `ALU_CTRL_SRL;
+                else if(andr)
+                    aluCtrl <= `ALU_CTRL_AND;
+                else
+                    aluCtrl <= `ALU_CTRL_ZERO;
+            `B_TYPE: begin // todo 因为 B 指令全覆盖了，所以可以考虑直接用 FUNCT3
+                aluCtrl <= `ALU_CTRL_SUB;   // info 全员做减法，然后使用 zero，嗯，有效。
+                if(beq)
+                    pcBranchSrc <= `BRANCH_CTRL_BEQ;
+                else if(bne)
+                    pcBranchSrc <= `BRANCH_CTRL_BNE;
+                else if(blt)
+                    pcBranchSrc <= `BRANCH_CTRL_BLT;
+                else if(bge)
+                    pcBranchSrc <= `BRANCH_CTRL_BGE;
+                else if(bltu)
+                    pcBranchSrc <= `BRANCH_CTRL_BLTU;
+                else if(bgeu)
+                    pcBranchSrc <= `BRANCH_CTRL_BGEU;
+                else
+                    pcBranchSrc <= `BRANCH_CTRL_ZERO;
+            end
+            `S_TYPE: aluCtrl <= `ALU_CTRL_ADD; // info store 和 load 都是单纯的 ALU-ADD 计算目标地址。
+            `L_TYPE: aluCtrl <= `ALU_CTRL_ADD;
+                
             default: aluCtrl <= `ALU_CTRL_ZERO;
         endcase
     end
